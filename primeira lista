@@ -1,157 +1,133 @@
-new Vue({
-    el: '#app',
-    data() {
-        return {
-            foodCategories: {
-                Naturais: [
-                    { name: 'Maçã' },
-                    { name: 'Banana' }
-                ],
-                Molhos: [
-                    { name: 'Ketchup' },
-                    { name: 'Mostarda' }
-                ],
-                Sais: [
-                    { name: 'Sal de Mesa' },
-                    { name: 'Sal Marinho' }
-                ],
-                Tags: [
-                    { name: 'Orgânico', quantity: 6 },
-                    { name: 'Sem Glúten', quantity: 6 }
-                ]
-            },
-            addedItems: []
-        };
-    },
-    computed: {
-        addedItemsByCategory() {
-            const categorizedItems = {
-                Naturais: [],
-                Molhos: [],
-                Sais: [],
-                Tags: []
-            };
+/* Reset and base styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-            this.addedItems.forEach(item => {
-                if (categorizedItems[item.category]) {
-                    categorizedItems[item.category].push(item);
-                    // Ordenar os itens dentro da categoria
-                    categorizedItems[item.category].sort((a, b) => a.name.localeCompare(b.name));
-                }
-            });
+body {
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    padding: 20px;
+}
 
-            return categorizedItems;
-        }
-    },
-    methods: {
-        addItem(item, category) {
-            const existingItem = this.addedItems.find(
-                added => added.name === item.name && added.category === category
-            );
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    background-color: #000;
+    padding: 20px;
+    border: 1px solid #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
 
-            if (existingItem) {
-                // Scroll suave para o item na lista de itens adicionados
-                const listItem = document.getElementById(`item-${existingItem.name}`);
-                if (listItem) {
-                    listItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            } else {
-                let initialQuantity = 1;
-                if (category === 'Tags') {
-                    initialQuantity = 6; // Iniciar itens da categoria Tags com 6
-                }
-                const newItem = { name: item.name, category, quantity: initialQuantity };
-                
-                // Adicionar campos para quantidade a ser adicionada/subtraída
-                newItem.quantityToAdd = 1;
-                newItem.quantityToSubtract = 1;
+.foods-list {
+    padding: 20px;
+}
 
-                this.addedItems.push(newItem);
+.foods-list h2 {
+    margin-top: 0;
+}
 
-                // Ordenar os itens novamente após adicionar um novo item
-                this.addedItems.sort((a, b) => {
-                    if (a.category === b.category) {
-                        return a.name.localeCompare(b.name);
-                    }
-                    return a.category.localeCompare(b.category);
-                });
+ul {
+    list-style-type: none;
+    padding: 0;
+}
 
-                // Scroll suave para o novo item adicionado
-                setTimeout(() => {
-                    const newItemElement = document.getElementById(`item-${newItem.name}`);
-                    if (newItemElement) {
-                        newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }, 100); // Tempo de espera para garantir que o item foi renderizado
-            }
-        },
-        adjustQuantity(item, category, change) {
-            const addedItem = this.addedItems.find(
-                added => added.name === item.name && added.category === category
-            );
+li {
+    margin-bottom: 8px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #333;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
-            if (addedItem) {
-                addedItem.quantity += change;
-            }
-        },
-        increaseQuantityByInput(item) {
-            const addedItem = this.addedItems.find(
-                added => added.name === item.name && added.category === item.category
-            );
+li:hover {
+    background-color: #444;
+}
 
-            if (addedItem) {
-                addedItem.quantity += addedItem.quantityToAdd;
-                addedItem.quantityToAdd = 1; // Resetar campo de entrada
-            }
-        },
-        decreaseBySix(item) {
-            const addedItem = this.addedItems.find(
-                added => added.name === item.name && added.category === item.category
-            );
+.add-btn,
+.control-btn {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
-            if (addedItem && addedItem.quantity > 6) {
-                addedItem.quantity -= 6;
-            }
-        },
-        increaseBySix(item) {
-            const addedItem = this.addedItems.find(
-                added => added.name === item.name && added.category === item.category
-            );
+.add-btn:hover,
+.control-btn:hover {
+    background-color: #0056b3;
+}
 
-            if (addedItem) {
-                addedItem.quantity += 6;
-            }
-        },
-        increaseBySixItem(item) {
-            const addedItem = this.addedItems.find(
-                added => added.name === item.name && added.category === item.category
-            );
+.added-foods-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    bottom: 20px;
+    width: 300px;
+    background-color: #000;
+    border: 1px solid #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+    color: #fff;
+}
 
-            if (addedItem) {
-                addedItem.quantity += 6;
-            }
-        },
-        enviarPorEmail() {
-            const observation = document.getElementById('observationText').value.trim();
+.added-foods {
+    padding: 20px;
+}
 
-            let emailContent = '';
-            Object.keys(this.addedItemsByCategory).forEach(category => {
-                if (this.addedItemsByCategory[category].length > 0) {
-                    emailContent += `${category}:\n`;
-                    this.addedItemsByCategory[category].forEach(item => {
-                        emailContent += `${item.name}: ${item.quantity}\n`;
-                    });
-                }
-            });
+.added-foods h2 {
+    margin-top: 0;
+}
 
-            if (observation !== '') {
-                emailContent += `\nObservação:\n${observation}`;
-            }
+.btn-send-email {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
-            document.getElementById('emailContent').value = emailContent;
-            document.getElementById('observation').value = observation;
+.btn-send-email:hover {
+    background-color: #0056b3;
+}
 
-            document.getElementById('emailForm').submit();
-        }
+#observationText {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #fff;
+    border-radius: 4px;
+    resize: vertical;
+    color: #000;
+}
+
+.quantity-controls {
+    margin-top: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
     }
-});
+
+    .added-foods-container {
+        width: 100%;
+        max-width: 100%;
+        left: 0;
+        right: 0;
+        border-radius: 0;
+    }
+}
