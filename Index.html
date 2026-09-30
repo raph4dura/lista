@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estoque de Rolos</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#1f2937}
+  .container{max-width:900px;margin:auto;padding:20px}
+  h1{margin:0 0 6px;font-size:28px}
+  .subtitle{margin:0 0 20px;color:#6b7280}
+  .card{background:white;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px #00000012}
+  .form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px}
+  label{font-size:13px;font-weight:bold;display:block;margin-bottom:6px}
+  input,select,button{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:9px;font-size:16px}
+  button{border:0;background:#2563eb;color:white;font-weight:bold;cursor:pointer}
+  button:hover{filter:brightness(.95)}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stat{background:#eef2ff;border-radius:12px;padding:16px}
+  .stat strong{display:block;font-size:28px;margin-top:4px}
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .roll{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #e5e7eb}
+  .roll:last-child{border-bottom:0}
+  .roll-info{display:flex;align-items:center;gap:12px;min-width:0}
+  .dot{width:18px;height:18px;border-radius:50%;border:1px solid #aaa;flex:none}
+  .name{font-weight:bold}
+  .meters{font-size:20px;font-weight:bold;white-space:nowrap}
+  .delete{width:auto;padding:9px 12px;background:#dc2626;font-size:14px}
+  .empty{text-align:center;color:#6b7280;padding:25px}
+  .count{color:#6b7280;font-size:14px;margin-top:8px}
+  @media(max-width:650px){
+    .form,.filters{grid-template-columns:1fr}
+    .form button{width:100%}
+    .roll{align-items:flex-start}
+    .meters{font-size:18px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>📦 Estoque de Rolos</h1>
+    <p class="subtitle">Controle suas metragens e cores.</p>
+
+    <div class="form">
+      <div>
+        <label for="tipo">Tipo / Cor</label>
+        <select id="tipo">
+          <option>Preto liso</option>
+          <option>Preto texturado</option>
+          <option>Golden</option>
+          <option>Nogueira</option>
+          <option>Bronze</option>
+          <option>Pirita</option>
+          <option>Grafite</option>
+        </select>
+      </div>
+      <div>
+        <label for="metragem">Metragem (m)</label>
+        <input id="metragem" type="number" min="0" step="0.01" placeholder="Ex.: 530">
+      </div>
+      <div style="align-self:end">
+        <button id="add">➕ Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">📦 Quantidade de rolos<strong id="totalRolos">0</strong></div>
+    <div class="stat">📏 Total de metros<strong id="totalMetros">0 m</strong></div>
+  </div>
+
+  <div class="card">
+    <h2>🔎 Buscar no estoque</h2>
+    <div class="filters">
+      <input id="buscaMetragem" type="number" min="0" step="0.01" placeholder="Buscar por metragem...">
+      <select id="filtroTipo">
+        <option value="">Todas as cores</option>
+        <option>Preto liso</option>
+        <option>Preto texturado</option>
+        <option>Golden</option>
+        <option>Nogueira</option>
+        <option>Bronze</option>
+        <option>Pirita</option>
+        <option>Grafite</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Rolos disponíveis</h2>
+    <div id="lista"></div>
+    <div class="count" id="count"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "estoqueRolos_v1";
+let rolos = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+const cores = {
+  "Preto liso":"#111111",
+  "Preto texturado":"#333333",
+  "Golden":"#d4af37",
+  "Nogueira":"#6b4226",
+  "Bronze":"#cd7f32",
+  "Pirita":"#8b8b83",
+  "Grafite":"#555555"
+};
+
+const tipo = document.getElementById("tipo");
+const metragem = document.getElementById("metragem");
+const buscaMetragem = document.getElementById("buscaMetragem");
+const filtroTipo = document.getElementById("filtroTipo");
+const lista = document.getElementById("lista");
+
+function salvar(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(rolos));
+}
+
+function formatarNumero(n){
+  return Number.isInteger(n) ? String(n) : n.toLocaleString("pt-BR",{maximumFractionDigits:2});
+}
+
+function adicionar(){
+  const valor = Number(metragem.value);
+  if(!Number.isFinite(valor) || valor <= 0){
+    alert("Digite uma metragem válida.");
+    metragem.focus();
+    return;
+  }
+  rolos.push({
+    id: Date.now() + Math.random(),
+    tipo: tipo.value,
+    metragem: valor
+  });
+  salvar();
+  metragem.value = "";
+  metragem.focus();
+  render();
+}
+
+function excluir(id){
+  const rolo = rolos.find(r => r.id === id);
+  if(!rolo) return;
+  if(confirm(`Usar/remover o rolo de ${formatarNumero(rolo.metragem)} m — ${rolo.tipo}?`)){
+    rolos = rolos.filter(r => r.id !== id);
+    salvar();
+    render();
+  }
+}
+
+function render(){
+  const busca = buscaMetragem.value.trim();
+  const tipoFiltro = filtroTipo.value;
+
+  let filtrados = rolos.filter(r => {
+    const bateMetragem = !busca || String(r.metragem).startsWith(busca);
+    const bateTipo = !tipoFiltro || r.tipo === tipoFiltro;
+    return bateMetragem && bateTipo;
+  });
+
+  filtrados.sort((a,b) => a.metragem - b.metragem);
+
+  document.getElementById("totalRolos").textContent = rolos.length;
+  document.getElementById("totalMetros").textContent =
+    formatarNumero(rolos.reduce((s,r)=>s+r.metragem,0)) + " m";
+  document.getElementById("count").textContent =
+    `${filtrados.length} rolo(s) exibido(s)`;
+
+  if(!filtrados.length){
+    lista.innerHTML = '<div class="empty">Nenhum rolo encontrado.</div>';
+    return;
+  }
+
+  lista.innerHTML = filtrados.map(r => `
+    <div class="roll">
+      <div class="roll-info">
+        <span class="dot" style="background:${cores[r.tipo] || "#999"}"></span>
+        <div>
+          <div class="name">${r.tipo}</div>
+          <div class="count">Rolo individual</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="meters">${formatarNumero(r.metragem)} m</span>
+        <button class="delete" onclick="excluir(${r.id})">🗑️ Usar</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+document.getElementById("add").addEventListener("click", adicionar);
+metragem.addEventListener("keydown", e => { if(e.key === "Enter") adicionar(); });
+buscaMetragem.addEventListener("input", render);
+filtroTipo.addEventListener("change", render);
+
+render();
+</script>
+</body>
+</html>
